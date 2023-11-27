@@ -1,0 +1,11 @@
+### Check no new access (CNNA) Step
+cnna:
+  enabled: True
+
+### Check access not granted (CANG) Step
+cang:
+  enabled: True
+
+### Check if pipeline should support CDK workflows
+cdkstg:
+  enabled: True

@@ -1,0 +1,16 @@
+version: 0.2
+
+phases:
+  install:
+    commands:
+      - pip install cfn-policy-validator
+  build:
+    commands:
+      - aws s3 cp $CANG_PERIMETER ./sensitive-actions.file
+      - actions=$(awk -vORS=, '{ print $1 }' sensitive-actions.file | sed 's/,$/\n/' | sed '$ s/[[:punct:]]$//')
+      - output=$(cfn-policy-validator check-access-not-granted --template-path ec2-instance-role.yaml --actions $actions --region us-west-2)
+    finally:
+      - echo "$output"
+      - if [ $pullRequestId ]; then aws codecommit post-comment-for-pull-request --pull-request-id $pullRequestId --repository-name $repositoryName --before-commit-id $destinationCommit --after-commit-id $sourceCommit --content "$output";fi
+      - blocking=$(echo $output | jq '.BlockingFindings[]')
+      - if [ "$blocking" ]; then aws codecommit update-pull-request-status --pull-request-id $pullRequestId --pull-request-status "Closed";fi

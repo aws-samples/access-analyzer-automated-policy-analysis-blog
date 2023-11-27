@@ -1,0 +1,17 @@
+version: 0.2
+
+phases:
+  install:
+    commands:
+      - pip install cfn-policy-validator
+  build:
+    commands:
+      - aws s3 cp $CNNA_PERIMETER ./cnna-reference-policy.json
+      - output=$(cfn-policy-validator check-no-new-access --template-path ec2-instance-role.yaml --reference-policy cnna-reference-policy.json --reference-policy-type identity)
+    finally:
+      - echo "$output"
+      - if [ $pullRequestId ]; then aws codecommit post-comment-for-pull-request --pull-request-id $pullRequestId --repository-name $repositoryName --before-commit-id $destinationCommit --after-commit-id $sourceCommit --content "$output";fi
+      - blocking=$(echo $output | jq '.BlockingFindings[]')
+      - echo $blocking
+      - echo "aws codecommit update-pull-request-status --pull-request-id $pullRequestId --pull-request-status Closed"
+      - if [ "$blocking" ]; then aws codecommit update-pull-request-status --pull-request-id $pullRequestId --pull-request-status "Closed";fi
