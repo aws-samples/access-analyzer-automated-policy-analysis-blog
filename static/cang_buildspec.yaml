@@ -3,12 +3,19 @@ version: 0.2
 phases:
   install:
     commands:
-      - pip install cfn-policy-validator
+      - sudo mkdir /usr/local/awscliv2
+      - curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+      - unzip awscliv2.zip
+      - sudo ./aws/install --bin-dir /usr/local/bin --install-dir /usr/local/awscliv2 --update
+      - export PATH="/usr/local/bin:$PATH"
+      - aws --version
+      - python -m  pip install --upgrade boto3
+      - pip install cfn-policy-validator==0.0.25
   build:
     commands:
       - aws s3 cp $CANG_PERIMETER ./sensitive-actions.file
       - actions=$(awk -vORS=, '{ print $1 }' sensitive-actions.file | sed 's/,$/\n/' | sed '$ s/[[:punct:]]$//')
-      - output=$(cfn-policy-validator check-access-not-granted --template-path ec2-instance-role.yaml --actions $actions --region us-west-2)
+      - output=$(cfn-policy-validator check-access-not-granted --template-path ec2-instance-role.yaml --actions $actions --region $AWS_DEFAULT_REGION)
     finally:
       - echo "$output"
       - if [ $pullRequestId ]; then aws codecommit post-comment-for-pull-request --pull-request-id $pullRequestId --repository-name $repositoryName --before-commit-id $destinationCommit --after-commit-id $sourceCommit --content "$output";fi

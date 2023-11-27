@@ -3,11 +3,18 @@ version: 0.2
 phases:
   install:
     commands:
-      - pip install cfn-policy-validator
+      - sudo mkdir /usr/local/awscliv2
+      - curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+      - unzip awscliv2.zip
+      - sudo ./aws/install --bin-dir /usr/local/bin --install-dir /usr/local/awscliv2 --update
+      - export PATH="/usr/local/bin:$PATH"
+      - aws --version
+      - python -m  pip install --upgrade boto3
+      - pip install cfn-policy-validator==0.0.25
   build:
     commands:
       - aws s3 cp $CNNA_PERIMETER ./cnna-reference-policy.json
-      - output=$(cfn-policy-validator check-no-new-access --template-path ec2-instance-role.yaml --reference-policy cnna-reference-policy.json --reference-policy-type identity)
+      - output=$(cfn-policy-validator check-no-new-access --template-path ec2-instance-role.yaml --reference-policy cnna-reference-policy.json --reference-policy-type identity --region $AWS_DEFAULT_REGION)
     finally:
       - echo "$output"
       - if [ $pullRequestId ]; then aws codecommit post-comment-for-pull-request --pull-request-id $pullRequestId --repository-name $repositoryName --before-commit-id $destinationCommit --after-commit-id $sourceCommit --content "$output";fi
