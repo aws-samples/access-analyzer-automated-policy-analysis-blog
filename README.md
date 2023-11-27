@@ -4,7 +4,7 @@ As covered in the following blog post: https://aws.amazon.com/blogs/security/int
 
 In this example, you will automate the validation and analysis of the IAM policies defined in an AWS CloudFromation template. The workflow will trigger each time a pull request is created against the main branch of an AWS CodeCommit repository called my-iam-policy. The first check will use IAM Access Analyzer's check no new access API to determine if the updated policy is more permissive than a reference IAM policy. The second check will use the check access not granted API to automatically check for critical permissions in an IAM policy. In both cases, if the updated policy is more permissive, or contains critical permissions, a comment with the results of the validation will be posted to the pull request. This information can then be used to decide whether or not the pull request is merged in to the mainline for deployment.
 
-![Custom IAM Policy Analysis Reference Archiecture](/static/policy_analysis_ref_arch.png "Reference Architecture")
+![Custom IAM Policy Analysis Reference Archiecture](/static/policy_analysis_ref_arch.jpg "Reference Architecture")
 
 ### Step 1: Deploy the infrastructure and set up the pipeline
 
