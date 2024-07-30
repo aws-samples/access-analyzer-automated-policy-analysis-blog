@@ -223,7 +223,7 @@ In this step, you will make a change to the IAM policy in the CloudFormation tem
             Statement:
               - Effect: Allow
                 Principal:
-                Service: ec2.amazonaws.com
+                  Service: ec2.amazonaws.com
                 Action: sts:AssumeRole
           Path: /
         Policies:
