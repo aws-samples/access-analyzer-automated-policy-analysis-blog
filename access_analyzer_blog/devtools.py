@@ -27,6 +27,7 @@ class DevTools(Construct):
         self._config_bucket = s3.Bucket(
             self, "PipelineConfigBucket",
             enforce_ssl=True,
+            auto_delete_objects=True,
             removal_policy=cdk.RemovalPolicy.DESTROY
             )
             

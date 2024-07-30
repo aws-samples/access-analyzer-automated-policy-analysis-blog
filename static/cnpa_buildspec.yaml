@@ -1,4 +1,7 @@
 version: 0.2
+env:
+  exported-variables:
+    - TemplateFileName
 
 phases:
   install:
@@ -13,11 +16,13 @@ phases:
       - pip install cfn-policy-validator==0.0.34 > /dev/null
   build:
     commands:
-      - aws s3 cp $CANG_PERIMETER ./sensitive-actions.file
-      - actions=$(awk -vORS=, '{ print $1 }' sensitive-actions.file | sed 's/,$/\n/' | sed '$ s/[[:punct:]]$//')
-      - output=$(cfn-policy-validator check-access-not-granted --template-path ec2-instance-role.yaml --actions $actions --region $AWS_DEFAULT_REGION)
+      - echo "Checking for public access..."
+      - output=$(cfn-policy-validator check-no-public-access --template-path ./*.yaml --region $AWS_DEFAULT_REGION)
     finally:
       - echo "$output"
+      - TemplateFileName=$(ls *.yaml)
       - if [ $pullRequestId ]; then aws codecommit post-comment-for-pull-request --pull-request-id $pullRequestId --repository-name $repositoryName --before-commit-id $destinationCommit --after-commit-id $sourceCommit --content "$output";fi
       - blocking=$(echo $output | jq '.BlockingFindings[]')
+      - echo $blocking
+      - echo "aws codecommit update-pull-request-status --pull-request-id $pullRequestId --pull-request-status Closed"
       - if [ "$blocking" ]; then aws codecommit update-pull-request-status --pull-request-id $pullRequestId --pull-request-status "Closed";fi

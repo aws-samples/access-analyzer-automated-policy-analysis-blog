@@ -66,4 +66,15 @@ def lambda_handler(event, context):
                     )
                     
         print(startBuild_2)
+
+        startBuild_3 = build.start_build(
+                    projectName=os.environ['CNPA_PROJECT_NAME'],
+                    sourceLocationOverride="https://git-codecommit." + os.environ['AWS_REGION'] + ".amazonaws.com/v1/repos/" + event["detail"]["repositoryNames"][0],
+                    artifactsOverride={'type': 'NO_ARTIFACTS'},
+                    sourceVersion=sourceBranch,
+                    sourceTypeOverride='CODECOMMIT',
+                    environmentVariablesOverride=build_Var
+                    )
+                    
+        print(startBuild_3)
         
