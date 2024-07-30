@@ -207,9 +207,7 @@ In this step, you will make a change to the IAM policy in the CloudFormation tem
     git checkout -b add-new-permissions
     ```
 
-2. Next, edit the IAM policy in ec2-instance-role.yaml to include an additional API action, dynamodb:Delete*, update the resource property of the inline policy to use an IAM role in the /my-sensitive-roles/*” path anf finally add a new Secrets Manager Secret that has resource policy that grants public access to the secret.
-
-You can copy the following example, if you’re unsure of how to do this. 
+2. Next, edit the IAM policy in ec2-instance-role.yaml to include an additional API action, dynamodb:Delete*, update the resource property of the inline policy to use an IAM role in the /my-sensitive-roles/*” path anf finally add a new Secrets Manager Secret that has resource policy that grants public access to the secret. You can copy the following example, if you’re unsure of how to do this. 
 
     ```yaml
     cat << EOF > ec2-instance-role.yaml
