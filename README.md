@@ -2,13 +2,15 @@
 
 As covered in the following blog post: https://aws.amazon.com/blogs/security/introducing-iam-access-analyzer-custom-policy-checks/ 
 
-In this example, you will automate the validation and analysis of the IAM policies defined in an AWS CloudFromation template. The workflow will trigger each time a pull request is created against the main branch of an AWS CodeCommit repository called my-iam-policy. The first check will use IAM Access Analyzer's check no new access API to determine if the updated policy is more permissive than a reference IAM policy. The second check will use the check access not granted API to automatically check for critical permissions in an IAM policy. In both cases, if the updated policy is more permissive, or contains critical permissions, a comment with the results of the validation will be posted to the pull request. This information can then be used to decide whether or not the pull request is merged in to the mainline for deployment.
+> AWS has extended custom policy checks to include a new check called Check No Public Access. This new check determines whether a resource policy grants public access to a specified resource type. In addition to this new check, there has been an update to the existing Check Access Not Granted check. The Check Access Not Granted check can now be used to determine whether a given policy grants permission to one or more customer-defined AWS resources. This example has been updated to include these new checks.
+
+In this example, you will automate the validation and analysis of the IAM identity and resources policies that are defined in an AWS CloudFromation template. The workflow will trigger each time a pull request is created against the main branch of an AWS CodeCommit repository called my-iam-policy. The workflow includes 3 checks. The first check will use IAM Access Analyzer's check no new access API to determine if the updated policy is more permissive than a reference IAM policy. The second check will use the check access not granted API to automatically check for critical permissions in an IAM policy. The third check uses the CheckNoPublicAccess API to check whether a resource policy grants public access to supported resource types. In all cases, if the updated policy is more permissive, contains sensitive permissions or grants public access to a sensitive resource type, a comment with the results of the validation will be posted to the pull request. This information can then be used to decide whether or not the pull request is merged in to the mainline for deployment.
 
 ![Custom IAM Policy Analysis Reference Archiecture](/static/policy_analysis_ref_arch.jpg "Reference Architecture")
 
 ### Step 1: Deploy the infrastructure and set up the pipeline
 
-1. Use the following command to download and unzip the Cloud Development Kit (CDK) project associated with this blog post.
+1. Use the following command to create a local clone of the Cloud Development Kit (CDK) project associated with this example.
 
     ```
     git clone https://github.com/aws-samples/access-analyzer-automated-policy-analysis-blog.git
@@ -114,52 +116,51 @@ For more information on installing and configuring git-remote-codecommit, see th
 If you’ve configured a named profile for use with the AWS CLI, use the following command, replacing <profile> with the name of your named profile.
 
     git clone codecommit://<profile>@my-iam-policy && cd ./my-iam-policy
-    
 
 3. Use the following command to create the CloudFormation template in the local clone of the repository. 
 
-    ```
+    ```yaml
     cat << EOF > ec2-instance-role.yaml
     ---
     AWSTemplateFormatVersion: 2010-09-09
     Description: CloudFormation Template to deploy base resources for access_analyzer_blog
     Resources:
-    EC2Role:
+      EC2Role:
         Type: AWS::IAM::Role
         Properties:
-        AssumeRolePolicyDocument:
+          AssumeRolePolicyDocument:
             Version: 2012-10-17
             Statement:
             - Effect: Allow
-            Principal:
+              Principal:
                 Service: ec2.amazonaws.com
-            Action: sts:AssumeRole
-        Path: /
-        Policies:
-        - PolicyName: my-application-permissions
+              Action: sts:AssumeRole
+          Path: /
+          Policies:
+          - PolicyName: my-application-permissions
             PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-            - Effect: Allow
+              Version: 2012-10-17
+              Statement:
+              - Effect: Allow
                 Action:
-                - 'ec2:RunInstances'
-                - 'lambda:CreateFunction'
-                - 'lambda:InvokeFunction'
-                - 'dynamodb:Scan'
-                - 'dynamodb:Query'
-                - 'dynamodb:UpdateItem'
-                - 'dynamodb:GetItem'
+                  - 'ec2:RunInstances'
+                  - 'lambda:CreateFunction'
+                  - 'lambda:InvokeFunction'
+                  - 'dynamodb:Scan'
+                  - 'dynamodb:Query'
+                  - 'dynamodb:UpdateItem'
+                  - 'dynamodb:GetItem'
                 Resource: '*'
-            - Effect: Allow
+              - Effect: Allow
                 Action:
-                - iam:PassRole 
+                  - iam:PassRole 
                 Resource: "arn:aws:iam::*:role/my-custom-role"
             
-    EC2InstanceProfile:
+      EC2InstanceProfile:
         Type: AWS::IAM::InstanceProfile
         Properties:
-        Path: /
-        Roles:
+          Path: /
+          Roles:
             - !Ref EC2Role
     EOF
     ```
@@ -194,11 +195,11 @@ The next step involves checking in the first version of the CloudFormation templ
     - Scroll down to the IAMPolicyValidation stage of the pipeline.
     - For both the check no new access and check access not granted actions, choose View Logs to inspect the log output.
 
-5. If you inspect the build logs for both the check no new access and check access not granted actions within the pipeline, you should see that there were no blocking or non-blocking findings, similar to what is shown in Figure 4. This indicates that the policy was validated successfully. In other words, the policy was not more permissive than the reference policy, and it did not include any of the critical permissions. 
+5. If you inspect the build logs for both the **check-no-new-access**, **check-access-not-granted** and **check-no-public-access** actions within the pipeline, you should see that there were no blocking or non-blocking findings. This indicates that the policy was checked successfully. In other words, the policy was not more permissive than the reference policy, it did not include any of the critical permissions or resources and there were no resources that were public.
 
 ### Step 4: Create a pull request to merge a new update to the CloudFormation template
 
-In this step, you will make a change to the IAM policy in the CloudFormation template. The change deliberately makes the policy grant more access than the reference policy. The change also includes a critical permission.
+In this step, you will make a change to the IAM policy in the CloudFormation template. The change deliberately makes the policy grant more access than the reference policy. The change also includes a critical permission and makes makes and adds a secrets manager secret with a resource policy that permits public access. 
 
 1. Use the following command to create a new branch called add-new-permissions in the local clone of the repository.
 
@@ -208,7 +209,8 @@ In this step, you will make a change to the IAM policy in the CloudFormation tem
 
 2. Next, edit the IAM policy in ec2-instance-role.yaml to include an additional API action, dynamodb:Delete* and update the resource property of the inline policy to use an IAM role in the /my-sensitive-roles/*” path. You can copy the following example, if you’re unsure of how to do this. 
 
-    ```
+    ```bash 
+    cat << EOF > ec2-instance-role.yaml
     ---
     AWSTemplateFormatVersion: 2010-09-09
     Description: CloudFormation Template to deploy base resources for access_analyzer_blog
@@ -226,11 +228,11 @@ In this step, you will make a change to the IAM policy in the CloudFormation tem
         Path: /
         Policies:
         - PolicyName: my-application-permissions
-            PolicyDocument:
+          PolicyDocument:
             Version: 2012-10-17
             Statement:
             - Effect: Allow
-                Action:
+              Action:
                 - 'ec2:RunInstances'
                 - 'lambda:CreateFunction'
                 - 'lambda:InvokeFunction'
@@ -239,18 +241,44 @@ In this step, you will make a change to the IAM policy in the CloudFormation tem
                 - 'dynamodb:UpdateItem'
                 - 'dynamodb:GetItem'
                 - 'dynamodb:Delete*'
-                Resource: '*'
+              Resource: '*'
             - Effect: Allow
-                Action:
+              Action:
                 - iam:PassRole 
-                Resource: "arn:aws:iam::*:role/my-sensitive-roles/my-custom-admin-role"
+              Resource: "arn:aws:iam::*:role/my-sensitive-roles/my-custom-admin-role"
             
     EC2InstanceProfile:
         Type: AWS::IAM::InstanceProfile
         Properties:
-        Path: /
-        Roles:
+          Path: /
+          Roles:
             - !Ref EC2Role
+
+    MySecret:
+      Type: AWS::SecretsManager::Secret
+      Properties:
+        Description: This is a secret that I want to attach a resource-based policy to
+    
+    MySecretResourcePolicy:
+      Type: AWS::SecretsManager::ResourcePolicy
+        Properties:
+        SecretId:
+          Ref: MySecret
+        ResourcePolicy:
+          Version: '2012-10-17'
+          Statement:
+          - Sid: "DenyAllAccountDeleteSecret"
+            Resource: "*"
+            Action: secretsmanager:DeleteSecret
+            Effect: Deny
+              Principal: "*"
+          - Sid: "AllowAllAccountGetSecretValue"
+            Resource: "*"
+            Action: secretsmanager:GetSecretValue
+            Effect: Allow
+            Principal: "*"
+    EOF
+    ```
 
 3. Commit the policy change and push the updated policy document to the repo by using the following commands. 
 
@@ -281,9 +309,11 @@ In this step, you will make a change to the IAM policy in the CloudFormation tem
 
 ### Why did the validations fail?
 
-The updated IAM role and inline policy failed validation for two reasons. First, the reference policy said that no one should have more permissions than the reference policy does. The reference policy in this example included a deny statement for the iam:PassRole permission with a resource of /my-sensitive-role/*. The new created inline policy included an allow statement for the iam:PassRole permission with a resource of arn:aws:iam::*:role/my-sensitive-roles/my-custom-admin-role. In other words, the new policy had more permissions than the reference policy.
+The updated IAM role and inline policy failed validation for three reasons. First, the reference policy said that no one should have more permissions than the reference policy does. The reference policy in this example included a deny statement for the iam:PassRole permission with a resource of /my-sensitive-role/*. The new created inline policy included an allow statement for the iam:PassRole permission with a resource of arn:aws:iam::*:role/my-sensitive-roles/my-custom-admin-role. In other words, the new policy had more permissions than the reference policy.
 
 Second, the list of critical permissions included the dynamodb:DeleteTable permission. The inline policy included a statement that would allow the EC2 instance to perform the dynamodb:DeleteTable action.
+
+Third and finally, the newly create Secrets Manager Secret had resource policy that grants public access to the secret.
 
 ### Cleanup
 

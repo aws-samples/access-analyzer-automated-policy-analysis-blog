@@ -183,6 +183,74 @@ class Pipeline(Construct):
             )
         )
 
+        ### Define check no public access action
+        cnpa = codebuild.PipelineProject(
+            self, "CNPA",
+            project_name="codebuild-cnpa-project",
+            build_spec=codebuild.BuildSpec.from_asset("./static/cnpa_buildspec.yaml"),
+            environment=codebuild.BuildEnvironment(
+                privileged=False,
+                build_image=codebuild.LinuxBuildImage.AMAZON_LINUX_2_3
+            ),
+            description="Check No Public Access",
+            timeout=cdk.Duration.minutes(60)
+        )
+
+        ### Define role permissions for check no public access action
+        cnpa.role.attach_inline_policy(iam.Policy(self, "CNPAInlinePolicy",
+            document=iam.PolicyDocument(
+                statements=[
+                    iam.PolicyStatement( 
+                        actions=[
+                            "access-analyzer:ListAnalyzers",
+                            "access-analyzer:ValidatePolicy",
+                            "access-analyzer:CreateAccessPreview",
+                            "access-analyzer:GetAccessPreview",
+                            "access-analyzer:ListAccessPreviewFindings",
+                            "access-analyzer:CreateAnalyzer",
+                            "access-analyzer:CheckAccessNotGranted",
+                            "access-analyzer:CheckNoPublicAccess"
+                        ],
+                        resources=["*"]
+                    ), 
+                    iam.PolicyStatement( 
+                        actions=["s3:getObject"], 
+                        resources=[
+                            devtools.config_bucket.bucket_arn,
+                            devtools.config_bucket.bucket_arn+"/*"
+                        ]
+                    ),
+                    iam.PolicyStatement(
+                        actions=[
+                            "codecommit:PostCommentForPullRequest", 
+                            "codecommit:UpdatePullRequestStatus", 
+                            "codecommit:GitPull" 
+                        ],
+                        resources=[
+                            devtools.code_repo.repository_arn
+                            ]
+                    ),
+                    iam.PolicyStatement(
+                        actions=[
+                            "iam:GetPolicy",
+                            "iam:GetPolicyVersion"
+                        ],
+                        resources=["*"]
+                    )  
+                ] 
+            ) 
+        ))
+
+        ### Add check no public access action to pipeline
+        security_ci.add_action(
+            codepipeline_actions.CodeBuildAction(
+                action_name="Check-no-public-access",
+                input=source_output,
+                project=cnpa,
+                run_order=2
+            )
+        ) 
+
         ## Add deploy stage to Pipeline
         pipeline.add_stage( 
             stage_name="Deploy",
@@ -216,14 +284,15 @@ class Pipeline(Construct):
             runtime=awslambda.Runtime.PYTHON_3_11,
             environment={
                 "CNNA_PROJECT_NAME": cnna.project_name,
-                "CANG_PROJECT_NAME": cang.project_name
+                "CANG_PROJECT_NAME": cang.project_name,
+                "CNPA_PROJECT_NAME": cnpa.project_name
             }
         )
 
         ### Define role permissions for Lambda function
         lambda_function.add_to_role_policy(iam.PolicyStatement(
             actions=["codebuild:StartBuild"],
-            resources=[cnna.project_arn, cang.project_arn]
+            resources=[cnna.project_arn, cang.project_arn, cnpa.project_arn]
         ))
 
         NagSuppressions.add_resource_suppressions(lambda_function,[{

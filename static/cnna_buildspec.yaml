@@ -3,14 +3,14 @@ version: 0.2
 phases:
   install:
     commands:
-      - sudo mkdir /usr/local/awscliv2
-      - curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-      - unzip awscliv2.zip
-      - sudo ./aws/install --bin-dir /usr/local/bin --install-dir /usr/local/awscliv2 --update
-      - export PATH="/usr/local/bin:$PATH"
-      - aws --version
-      - python -m  pip install --upgrade boto3
-      - pip install cfn-policy-validator==0.0.25
+      - sudo mkdir /usr/local/awscliv2 > /dev/null
+      - curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" > /dev/null
+      - unzip awscliv2.zip > /dev/null
+      - sudo ./aws/install --bin-dir /usr/local/bin --install-dir /usr/local/awscliv2 --update > /dev/null
+      - export PATH="/usr/local/bin:$PATH" > /dev/null
+      - aws --version > /dev/null
+      - python -m pip install --upgrade boto3 > /dev/null
+      - pip install cfn-policy-validator==0.0.34 > /dev/null
   build:
     commands:
       - aws s3 cp $CNNA_PERIMETER ./cnna-reference-policy.json
