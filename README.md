@@ -120,10 +120,6 @@ If you’ve configured a named profile for use with the AWS CLI, use the followi
 
 3. Use the following command to create the CloudFormation template in the local clone of the repository. 
 
-  > [!CAUTION]
-  > This sample role and policy should not be used in production. Using a wildcard in the principal element of a role’s trust policy would allow any IAM principal in any account to assume the role
-
-
     ```yaml
     cat << EOF > ec2-instance-role.yaml
     ---
