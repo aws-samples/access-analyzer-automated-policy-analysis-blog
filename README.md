@@ -119,7 +119,7 @@ If you’ve configured a named profile for use with the AWS CLI, use the followi
     git clone codecommit://<profile>@my-iam-policy && cd ./my-iam-policy
 
 > [!CAUTION]
-> This example CloudFormation templates in the following sections should not be used in production. They are intended to be use for demonstration purposes only.
+> This example CloudFormation templates in the following sections should not be used in production. They are intended to be used for demonstration purposes only.
 
 3. Use the following command to create the CloudFormation template in the local clone of the repository. 
 
