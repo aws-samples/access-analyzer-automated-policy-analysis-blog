@@ -271,7 +271,7 @@ In this step, you will make a change to the IAM policy in the CloudFormation tem
               Resource: "*"
               Action: secretsmanager:DeleteSecret
               Effect: Deny
-               Principal: "*"
+              Principal: "*"
             - Sid: "AllowAllAccountGetSecretValue"
               Resource: "*"
               Action: secretsmanager:GetSecretValue
