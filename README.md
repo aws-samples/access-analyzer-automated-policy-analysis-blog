@@ -215,7 +215,7 @@ In this step, you will make a change to the IAM policy in the CloudFormation tem
     AWSTemplateFormatVersion: 2010-09-09
     Description: CloudFormation Template to deploy base resources for access_analyzer_blog
     Resources:
-    EC2Role:
+      EC2Role:
         Type: AWS::IAM::Role
         Properties:
         AssumeRolePolicyDocument:
