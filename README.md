@@ -226,26 +226,26 @@ In this step, you will make a change to the IAM policy in the CloudFormation tem
                   Service: ec2.amazonaws.com
                 Action: sts:AssumeRole
           Path: /
-        Policies:
-        - PolicyName: my-application-permissions
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action:
-                  - 'ec2:RunInstances'
-                  - 'lambda:CreateFunction'
-                  - 'lambda:InvokeFunction'
-                  - 'dynamodb:Scan'
-                  - 'dynamodb:Query'
-                  - 'dynamodb:UpdateItem'
-                  - 'dynamodb:GetItem'
-                  - 'dynamodb:Delete*'
-                Resource: '*'
-              - Effect: Allow
-                Action:
-                  - iam:PassRole 
-                Resource: "arn:aws:iam::*:role/my-sensitive-roles/my-custom-admin-role"
+          Policies:
+          - PolicyName: my-application-permissions
+            PolicyDocument:
+              Version: 2012-10-17
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - 'ec2:RunInstances'
+                    - 'lambda:CreateFunction'
+                    - 'lambda:InvokeFunction'
+                    - 'dynamodb:Scan'
+                    - 'dynamodb:Query'
+                    - 'dynamodb:UpdateItem'
+                    - 'dynamodb:GetItem'
+                    - 'dynamodb:Delete*'
+                  Resource: '*'
+                - Effect: Allow
+                  Action:
+                    - iam:PassRole 
+                  Resource: "arn:aws:iam::*:role/my-sensitive-roles/my-custom-admin-role"
             
       EC2InstanceProfile:
         Type: AWS::IAM::InstanceProfile
