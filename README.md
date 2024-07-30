@@ -247,36 +247,36 @@ In this step, you will make a change to the IAM policy in the CloudFormation tem
                 - iam:PassRole 
               Resource: "arn:aws:iam::*:role/my-sensitive-roles/my-custom-admin-role"
             
-    EC2InstanceProfile:
+      EC2InstanceProfile:
         Type: AWS::IAM::InstanceProfile
         Properties:
           Path: /
           Roles:
             - !Ref EC2Role
 
-    MySecret:
-      Type: AWS::SecretsManager::Secret
-      Properties:
-        Description: This is a secret that I want to attach a resource-based policy to
-    
-    MySecretResourcePolicy:
-      Type: AWS::SecretsManager::ResourcePolicy
+      MySecret:
+        Type: AWS::SecretsManager::Secret
         Properties:
-        SecretId:
-          Ref: MySecret
-        ResourcePolicy:
-          Version: '2012-10-17'
-          Statement:
-          - Sid: "DenyAllAccountDeleteSecret"
-            Resource: "*"
-            Action: secretsmanager:DeleteSecret
-            Effect: Deny
+         Description: This is a secret that I want to attach a resource-based policy to
+    
+      MySecretResourcePolicy:
+        Type: AWS::SecretsManager::ResourcePolicy
+        Properties:
+          SecretId:
+            Ref: MySecret
+          ResourcePolicy:
+            Version: '2012-10-17'
+            Statement:
+            - Sid: "DenyAllAccountDeleteSecret"
+              Resource: "*"
+              Action: secretsmanager:DeleteSecret
+              Effect: Deny
+               Principal: "*"
+            - Sid: "AllowAllAccountGetSecretValue"
+              Resource: "*"
+              Action: secretsmanager:GetSecretValue
+              Effect: Allow
               Principal: "*"
-          - Sid: "AllowAllAccountGetSecretValue"
-            Resource: "*"
-            Action: secretsmanager:GetSecretValue
-            Effect: Allow
-            Principal: "*"
     EOF
     ```
 
