@@ -218,14 +218,14 @@ In this step, you will make a change to the IAM policy in the CloudFormation tem
       EC2Role:
         Type: AWS::IAM::Role
         Properties:
-        AssumeRolePolicyDocument:
+          AssumeRolePolicyDocument:
             Version: 2012-10-17
             Statement:
             - Effect: Allow
             Principal:
                 Service: ec2.amazonaws.com
             Action: sts:AssumeRole
-        Path: /
+          Path: /
         Policies:
         - PolicyName: my-application-permissions
           PolicyDocument:
